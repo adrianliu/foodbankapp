@@ -96,6 +96,34 @@ class DB(object):
       tasks.append(task.to_dict())
     return tasks
 
+  def create_user_table(self):
+    """
+    Create a User table. Silently error-handles
+    (try-except) because the table might already exist.
+    """
+    try:
+      self.conn.execute("""
+        CREATE TABLE user
+        (USER_ID TEXT PRIMARY KEY NOT NULL,
+        NAME TEXT NOT NULL,
+        ADDRESS TEXT NOT NULL,
+        ZIP_CODE TEXT NOT NULL,
+        CITY TEXT NOT NULL,
+        STATE TEXT NOT NULL,
+        COUNTRY TEXT NOT NULL,
+        PHONE TEXT NOT NULL,
+        EMAIL TEXT NOT NULL,
+        DESCRIPTION TEXT NOT NULL,
+        ORGANIZATION_TYPE TEXT NOT NULL,
+        USER_TYPE INT NOT NULL,
+        PICK_UP_METHOD TEXT,
+        POPULATION INT,
+        TOTAL_CAPACITY TEXT,
+        CURRENT_INVENTORY TEXT,
+        CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
+      """)
+    except Exception as e: print e
+
 
 # Only <=1 instance of the DB driver
 # exists within the app at all times

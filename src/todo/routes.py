@@ -1,4 +1,5 @@
 from flask import jsonify
+from flask import render_template
 from flask import request
 from todo import app
 from todo import Db as db
@@ -7,7 +8,7 @@ import json
 
 @app.route('/', methods=['GET'])
 def index():
-  return jsonify({ 'hello': 'world' })
+	return render_template('main.html')
 
 @app.route('/tasks', methods=['GET', 'POST'])
 def get_tasks():
