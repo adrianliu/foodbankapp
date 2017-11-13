@@ -2,6 +2,7 @@ import os
 import json
 import sqlite3
 from models import Task
+from models import User
 
 # From: https://goo.gl/YzypOI
 def singleton(cls):
@@ -22,6 +23,7 @@ class DB(object):
     self.conn = sqlite3.connect("todo.db", check_same_thread=False)
     # TODO - Create all other tables here
     self.create_task_table()
+    self.create_user_table()
 
   def create_task_table(self):
     """
@@ -46,7 +48,6 @@ class DB(object):
       DROP TABLE task;
       """)
     self.conn.commit()
-
 
   def create_task(self, task):
     """
@@ -104,7 +105,8 @@ class DB(object):
     try:
       self.conn.execute("""
         CREATE TABLE user
-        (USER_ID TEXT PRIMARY KEY NOT NULL,
+        (USERNAME TEXT PRIMARY KEY NOT NULL,
+        PASSWORD TEXT NOT NULL,
         NAME TEXT,
         ADDRESS TEXT,
         ZIP_CODE TEXT,
@@ -115,9 +117,9 @@ class DB(object):
         EMAIL TEXT,
         DESCRIPTION TEXT,
         ORGANIZATION_TYPE TEXT,
-        USER_TYPE INT,
+        USER_TYPE TEXT,
         PICK_UP_METHOD TEXT,
-        POPULATION INT,
+        POPULATION TEXT,
         TOTAL_CAPACITY TEXT,
         CURRENT_INVENTORY TEXT,
         CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
@@ -128,9 +130,21 @@ class DB(object):
     if not isinstance(user, User):
       return
     self.conn.execute("""
-      INSERT INTO user (USER_ID,NAME,ADDRESS,ZIP_CODE,CITY,STATE,COUNTRY,PHONE,EMAIL,DESCRIPTION,ORGANIZATION_TYPE,USER_TYPE,PICK_UP_METHOD,POPULATION,TOTAL_CAPACITY,CURRENT_INVENTORY)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (user.USER_ID, user.NAME, user.ADDRESS, user.ZIP_CODE, user.CITY, user.STATE, user.COUNTRY, user.PHONE, user.EMAIL, user.DESCRIPTION, user.ORGANIZATION_TYPE, user.USER_TYPE, user.PICK_UP_METHOD, user.POPULATION, user.TOTAL_CAPACITY, user.CURRENT_INVENTORY))
+      INSERT INTO user (USERNAME,PASSWORD,NAME,ADDRESS,ZIP_CODE,CITY,STATE,COUNTRY,PHONE,EMAIL,DESCRIPTION,ORGANIZATION_TYPE,USER_TYPE,PICK_UP_METHOD,POPULATION,TOTAL_CAPACITY,CURRENT_INVENTORY)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (user.username, user.password, user.name, user.address, user.zip_code, user.city, user.state, user.country, user.phone, user.email, user.description, user.organization_type, user.user_type, user.pick_up_method, user.population, user.total_capacity, user.current_inventory))
     self.conn.commit()
+
+  def user_login(self, username, password):
+    cursor = self.conn.execute("""
+      SELECT username, password FROM user;
+    """)
+
+    for row in cursor:
+      one_username = row[0]
+      one_password = row[1]
+      if str(one_username) == str(username) and str(one_password) == str(password):
+        return True
+    return False
 
   def create_food_table():
     """

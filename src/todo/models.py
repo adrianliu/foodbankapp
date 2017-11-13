@@ -43,4 +43,26 @@ class Task(Model):
   def to_dict(self):
     return super(Task, self).to_dict()
 
+class User(Model):
+  """
+  class for all Task model
+  """
+  def __init__(self, username, password, name, address, zip_code, city, state, country, phone, email, description, organization_type, user_type, pick_up_method, population, total_capacity, current_inventory):
+    self.username = username
+    self.password = password
+    self.name = name
+    self.address = address
+    self.zip_code = zip_code
+    self.city = city
+    self.state = state
+    self.country = country
+    self.phone = phone
+    self.email = email
+    self.description = description
+    self.organization_type = organization_type
+    self.user_type = user_type
+    self.pick_up_method = pick_up_method
+    self.population = population
+    self.total_capacity = total_capacity
+    self.current_inventory = current_inventory
 
