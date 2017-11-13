@@ -105,21 +105,45 @@ class DB(object):
       self.conn.execute("""
         CREATE TABLE user
         (USER_ID TEXT PRIMARY KEY NOT NULL,
-        NAME TEXT NOT NULL,
-        ADDRESS TEXT NOT NULL,
-        ZIP_CODE TEXT NOT NULL,
-        CITY TEXT NOT NULL,
-        STATE TEXT NOT NULL,
-        COUNTRY TEXT NOT NULL,
-        PHONE TEXT NOT NULL,
-        EMAIL TEXT NOT NULL,
-        DESCRIPTION TEXT NOT NULL,
-        ORGANIZATION_TYPE TEXT NOT NULL,
-        USER_TYPE INT NOT NULL,
+        NAME TEXT,
+        ADDRESS TEXT,
+        ZIP_CODE TEXT,
+        CITY TEXT,
+        STATE TEXT,
+        COUNTRY TEXT,
+        PHONE TEXT,
+        EMAIL TEXT,
+        DESCRIPTION TEXT,
+        ORGANIZATION_TYPE TEXT,
+        USER_TYPE INT,
         PICK_UP_METHOD TEXT,
         POPULATION INT,
         TOTAL_CAPACITY TEXT,
         CURRENT_INVENTORY TEXT,
+        CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
+      """)
+    except Exception as e: print e
+
+  def create_user(self, user):
+    if not isinstance(user, User):
+      return
+    self.conn.execute("""
+      INSERT INTO user (USER_ID,NAME,ADDRESS,ZIP_CODE,CITY,STATE,COUNTRY,PHONE,EMAIL,DESCRIPTION,ORGANIZATION_TYPE,USER_TYPE,PICK_UP_METHOD,POPULATION,TOTAL_CAPACITY,CURRENT_INVENTORY)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (user.USER_ID, user.NAME, user.ADDRESS, user.ZIP_CODE, user.CITY, user.STATE, user.COUNTRY, user.PHONE, user.EMAIL, user.DESCRIPTION, user.ORGANIZATION_TYPE, user.USER_TYPE, user.PICK_UP_METHOD, user.POPULATION, user.TOTAL_CAPACITY, user.CURRENT_INVENTORY))
+    self.conn.commit()
+
+  def create_food_table():
+    """
+    Create a Food table. Silently error-handles
+    (try-except) because the table might already exist.
+    """
+    try:
+      self.conn.execute("""
+        CREATE TABLE food
+        (FOOD_ID TEXT PRIMARY KEY NOT NULL,
+        CATEGORY_ID TEXT,
+        FOOD_NAME TEXT,
+        DESCRIPTION TEXT,
         CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
       """)
     except Exception as e: print e
