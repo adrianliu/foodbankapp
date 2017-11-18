@@ -4,9 +4,10 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import session
+from flask import url_for
 from todo import app
 from todo import Db as db
-from models import User
+from models import Request, Request_Detail, User
 import json
 
 @app.route('/')
@@ -19,9 +20,47 @@ def login_complete():
 		username = request.form['username']
 		password = request.form['password']
 		if db.user_login(username, password):
-			return "Log in complete"
+			session['logged_in'] = True
+			session['username'] = username
+			return redirect(url_for('login_donor'))
 		else:
+			# todo
 			return "Incorrect username or password"
+
+@app.route('/login/donor/', methods=['GET', 'POST'])
+def login_donor():
+	if session['logged_in']:
+		return render_template('login_donor.html')	
+	else:
+		flash('wrong password!')
+
+@app.route('/donate', methods=['GET', 'POST'])
+def donate_request():
+	if session['logged_in']:
+		return render_template('donate_request.html')
+	else:
+		flash('wrong password!')
+
+@app.route('/submit/donate', methods=['GET', 'POST'])
+def submit_donate_request():
+	if session['logged_in'] and request.method == 'POST':
+		from_user = session['username']
+		to_user = request.form['to_user']
+		appointment_date = request.form['date']
+		appointment_time = request.form['time']		
+		request_type = 1
+		beneficiary = request.form['beneficiary']
+		frequency = request.form['frequency']
+		description = request.form['description']
+
+		food_item_id = request.form['food_item_id']
+		quantity = request.form['quantity']
+		weight = request.form['weight']
+		expiry_date = request.form['expiry_date']
+
+		new_request = Request(from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description)
+		db.create_request_header(new_request)
+		return "succeed"
 
 @app.route('/signup/donor', methods=['GET', 'POST'])
 def signup_donor():
@@ -56,8 +95,10 @@ def signup_complete():
 		total_capacity = None;
 		current_inventory = None;
 		new_user = User(username, password, name, address, zip_code, city, state, country, phone, email, description, organization_type, user_type, pick_up_method, population, total_capacity, current_inventory)
-		db.create_user(new_user)
-		return "Sign Up Complete!"
+		if db.create_user(new_user):
+			return "Sign Up Complete!"
+		else:
+			return "Username already exists!"
 
 # @app.route('/')
 # def home():

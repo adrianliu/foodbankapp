@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Log In</title>
+</head>
+<body>
+
+<div class="donate-main">
+    <div class="donate-main-menu">
+        <form action="/submit/donate" method="POST">
+            Donate to:
+			<select name="to_user">
+				<option value="1">Food Bank 1</option>
+				<option value="2">Food Bank 2</option>
+				<option value="3">Food Bank 3</option>
+				<option value="4">Food Bank 4</option>
+			</select>
+			<br><br>
+			Add Food Item:<br>
+			<select>
+				<option value="1">Category 1</option>
+				<option value="2">Category 2</option>
+				<option value="3">Category 3</option>
+				<option value="4">Category 4</option>
+			</select>
+			
+			<br><input type="text" name="food_item_id" value="" placeholder="Food Name">
+			<br><input type="text" name="quantity" value="" placeholder="Quantity">
+			<br><input type="text" name="weight" value="" placeholder="Weight">
+			<br>Expiration Date:<input type="date" name="expiry_date"><br>
+
+			<br>Photo (optional):<input type="text" name="photo" value="" placeholder="Take or Upload a photo of the food">
+			<br>Preferred beneficiary (optional):<input type="text" name="beneficiary" value="" placeholder="An organization or a person">
+			<br>Appointment Date:<input type="date" name="date">
+			<br>Appointment Time:<input type="time" name="time">
+			<br>Frequency
+			<select name="frequency">
+				<option value="1">One Time</option>
+				<option value="2">Weekly</option>
+				<option value="3">Monthly</option>
+			</select>
+			<br>Do you have anything specific for this donation?
+			<br><textarea rows="4" cols="50" name="description"></textarea>
+			<br><br>
+			<input type="submit" value="Submit">
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

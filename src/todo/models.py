@@ -66,3 +66,27 @@ class User(Model):
     self.total_capacity = total_capacity
     self.current_inventory = current_inventory
 
+class Request(Model):
+  """
+  class for all Task model
+  """
+  def __init__(self, from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description):
+    self.from_user = from_user
+    self.to_user = to_user
+    self.appointment_date = appointment_date
+    self.appointment_time = appointment_time
+    self.request_type = request_type
+    self.beneficiary = beneficiary
+    self.frequency = frequency
+    self.description = description
+
+class Request_Detail(Model):
+  """
+  class for all Task model
+  """
+  def __init__(self, request_header_id, food_item_id, quantity, weight, expiry_date):
+    self.request_header_id = request_header_id
+    self.food_item_id = food_item_id
+    self.quantity = quantity
+    self.weight = weight
+    self.expiry_date = expiry_date
