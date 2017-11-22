@@ -4,7 +4,6 @@ import sqlite3
 from models import Request, Request_Detail, User
 from todo import constants as constants
 
-# From: https://goo.gl/YzypOI
 def singleton(cls):
   instances = {}
   def getinstance():
@@ -15,7 +14,7 @@ def singleton(cls):
 
 class DB(object):
   """
-  DB driver for the Todo app - deals with writing entities
+  DB driver for the Food Bank app - deals with writing entities
   to the DB and reading entities from the DB
   """
 
@@ -29,78 +28,6 @@ class DB(object):
     self.create_transaction_detail_table()
     self.create_food_item_table()
     self.create_category_table()
-
-  def create_task_table(self):
-    """
-    Create a Task table. Silently error-handles
-    (try-except) because the table might already exist.
-    """
-    try:
-      self.conn.execute("""
-        CREATE TABLE task
-        (ID TEXT PRIMARY KEY NOT NULL,
-        NAME TEXT NOT NULL,
-        DESCRIPTION TEXT NOT NULL,
-        TAGS TEXT NOT NULL,
-        DUE_DATE INT NOT NULL,
-        CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
-      """)
-    except Exception as e: print e
-
-  def delete_task_table(self):
-    # TODO - Implement this to delete a task table
-    self.conn.execute("""
-      DROP TABLE task;
-      """)
-    self.conn.commit()
-
-  def create_task(self, task):
-    """
-    VALUES (task.id, task.name, task.description, task.tags, task.due_date);
-    Insert a task to task table.
-    """
-    if not isinstance(task, Task):
-      return
-    self.conn.execute("""
-      INSERT INTO task (ID,NAME,DESCRIPTION,TAGS,DUE_DATE)
-      VALUES (?,?,?,?,?)""", (task.id, task.name, task.description, task.tags, task.due_date))
-    self.conn.commit()
-
-  def delete_task(self, task_id):
-    """
-    Delete the specific task from task table.
-    """
-    self.conn.execute("""
-      DELETE from task where ID= (?)""",(task_id,))
-    self.conn.commit()
-
-  def delete_all_tasks(self):
-    """
-    Delete all tasks from task table.
-    """
-    self.conn.execute("""
-      DELETE from task;
-      """)
-    self.conn.commit()
-
-  def query_all_tasks(self):
-    """
-    Query tasks from Task table.
-    """
-    cursor = self.conn.execute("""
-      SELECT * FROM task;
-    """)
-
-    tasks = []
-    for row in cursor:
-      id = row[0]
-      name = row[1]
-      description = row[2]
-      tags = row[3]
-      due_date = row[4]
-      task = Task(name, description, tags, due_date, id)
-      tasks.append(task.to_dict())
-    return tasks
 
   def create_user_table(self):
     """
@@ -164,6 +91,17 @@ class DB(object):
         return new_user
     return None
 
+  def foodbank_query(self):
+    cursor = self.conn.execute("""
+      SELECT username FROM user where user_type = 0;
+    """)
+
+    foodbanks_username = []
+    for row in cursor:
+      one_foodbank_username = row[0]
+      foodbanks_username.append(one_foodbank_username)
+    return foodbanks_username
+
   def create_request_table(self):
     """
     Create a Request table. Silently error-handles
@@ -181,6 +119,7 @@ class DB(object):
         BENEFICIARY TEXT,
         FREQUENCY TEXT,
         DESCRIPTION TEXT,
+        STATUS INTEGER NOT NULL,
         CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
       """)
     except Exception as e: print e
@@ -198,7 +137,7 @@ class DB(object):
         TO_USER TEXT,
         APPOINTMENT_DATE TEXT,
         APPOINTMENT_TIME TEXT,
-        REQUEST_TYPE INTEGER,
+        TRANSACTION_TYPE INTEGER,
         BENEFICIARY TEXT,
         FREQUENCY TEXT,
         DESCRIPTION TEXT,
@@ -211,10 +150,20 @@ class DB(object):
       return
 
     self.conn.execute("""
-      INSERT INTO request (REQUEST_ID,FROM_USER,TO_USER,APPOINTMENT_DATE,APPOINTMENT_TIME,REQUEST_TYPE,BENEFICIARY,FREQUENCY,DESCRIPTION)
-      VALUES (?,?,?,?,?,?,?,?,?)""", (request.request_id, request.from_user, request.to_user, request.appointment_date, request.appointment_time, request.request_type, request.beneficiary, request.frequency, request.description))
+      INSERT INTO request (REQUEST_ID,FROM_USER,TO_USER,APPOINTMENT_DATE,APPOINTMENT_TIME,REQUEST_TYPE,BENEFICIARY,FREQUENCY,DESCRIPTION,STATUS)
+      VALUES (?,?,?,?,?,?,?,?,?,?)""", (request.request_id, request.from_user, request.to_user, request.appointment_date, request.appointment_time, request.request_type, request.beneficiary, request.frequency, request.description, request.status))
     self.conn.commit()
     return request.request_id
+
+  def create_transaction_header(self, transaction):
+    if not isinstance(transaction, Transaction):
+      return
+
+    self.conn.execute("""
+      INSERT INTO transaction_header (TRANSACTION_ID,FROM_USER,TO_USER,APPOINTMENT_DATE,APPOINTMENT_TIME,TRANSACTION_TYPE,BENEFICIARY,FREQUENCY,DESCRIPTION)
+      VALUES (?,?,?,?,?,?,?,?,?)""", (transaction.transaction_id, transaction.from_user, transaction.to_user, transaction.appointment_date, transaction.appointment_time, transaction.transaction_type, transaction.beneficiary, transaction.frequency, transaction.description))
+    self.conn.commit()
+    return transaction.transaction_id
 
   def create_request_detail_table(self):
     """
@@ -263,6 +212,15 @@ class DB(object):
       VALUES (?,?,?,?,?,?,?)""", (detail.request_detail_id, detail.request_header_id, detail.food_item_id, detail.category_id, detail.quantity, detail.weight, detail.expiry_date))
     self.conn.commit()
 
+  def create_transaction_detail_entry(self, detail):
+    if not isinstance(detail, Transaction_Detail):
+      return
+
+    self.conn.execute("""
+      INSERT INTO transaction_detail (TRANSACTION_DETAIL_ID,TRANSACTION_HEADER_ID,FOOD_ITEM_ID,CATEGORY_ID,QUANTITY,WEIGHT,EXPIRY_DATE)
+      VALUES (?,?,?,?,?,?,?)""", (detail.transaction_detail_id, detail.transaction_header_id, detail.food_item_id, detail.category_id, detail.quantity, detail.weight, detail.expiry_date))
+    self.conn.commit()
+
   def create_food_item_table(self):
     """
     Create a Food Item table. Silently error-handles
@@ -294,12 +252,35 @@ class DB(object):
       """)
     except Exception as e: print e
 
-  def create_category_entry(self):
-    pass
+    self.conn.execute("""
+      DELETE FROM category;""")
+    self.conn.commit()
+
+    self.create_category_entry("1", "Vegetables", "shucai")
+    self.create_category_entry("2", "Fruit", "shuiguo")
+    self.create_category_entry("3", "Grain", "guwu")
+    self.create_category_entry("4", "Meat", "rou")
+    self.create_category_entry("5", "Milk", "nai")
+
+  def create_category_entry(self, category_id, category_name, description):
+    self.conn.execute("""
+      INSERT INTO category (CATEGORY_ID, CATEGORY_NAME,DESCRIPTION)
+      VALUES (?,?,?)""", (category_id, category_name, description))
+    self.conn.commit()
+
+  def category_query(self):
+    cursor = self.conn.execute("""
+      SELECT category_id, category_name FROM category;
+    """)
+
+    categories = {}
+    for row in cursor:
+      categories[row[0]] = row[1]
+    return categories
 
   def fetch_request(self, username):
     cursor = self.conn.execute("""
-      SELECT * FROM request where 1 == 1 or to_user = (?)""",(username,))
+      SELECT * FROM request where status == 0 AND to_user = (?)""",(username,))
 
     donations = []
     consumptions = []
@@ -313,14 +294,24 @@ class DB(object):
       beneficiary = row[6]
       frequency = row[7]
       description = row[8]
-      create_date = row[9]
+      status = row[9]
+      create_date = row[10]
 
-      new_request = Request(from_user, username, appointment_date, appointment_time, request_type, beneficiary, frequency, description, create_date, request_id)
+      new_request = Request(from_user, username, appointment_date, appointment_time, request_type, beneficiary, frequency, description, status, create_date, request_id)
       if request_type == constants.REQUEST_DONATION:
         donations.append(new_request)
       else:
         consumptions.append(new_request)
     return donations, consumptions
+
+  def update_request(self, request_id):
+    cursor = self.conn.execute("""
+      UPDATE request SET status = 1 where request_id = (?)""",(request_id,))
+
+  def approve_request(self, request_id):
+    self.conn.execute("""
+      UPDATE request SET status = 1 where request_id = (?)""",(request_id,))
+    self.conn.commit()
 
   def fetch_one_whole_request(self, request_id):
     cursor = self.conn.execute("""
@@ -336,8 +327,9 @@ class DB(object):
       beneficiary = row[6]
       frequency = row[7]
       description = row[8]
-      create_date = row[9]
-      new_request = Request(from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description, create_date, request_id)
+      status = row[9]
+      create_date = row[10]
+      new_request = Request(from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description, status, create_date, request_id)
       request_header.append(new_request)
 
     cursor = self.conn.execute("""

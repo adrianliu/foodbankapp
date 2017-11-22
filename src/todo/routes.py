@@ -54,7 +54,10 @@ def login_foodbank():
 @app.route('/request/donate', methods=['GET', 'POST'])
 def request_donate():
 	if session['logged_in']:
-		return render_template('request_donate.html')
+		foodbanks_username = db.foodbank_query()
+		categories = db.category_query()
+		print categories
+		return render_template('request_donate.html', foodbanks_username = foodbanks_username, categories = categories)
 
 @app.route('/submit/donate', methods=['GET', 'POST'])
 def submit_donate_request():
@@ -74,7 +77,7 @@ def submit_donate_request():
 		weight = request.form['weight']
 		expiry_date = request.form['expiry_date']
 
-		new_request = Request(from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description)
+		new_request = Request(from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description, constants.REQUEST_PENDING)
 		request_id = db.create_request_header(new_request)
 		new_request_detail = Request_Detail(request_id, food_item_id, category_id, quantity, weight, expiry_date)
 		db.create_request_detail_entry(new_request_detail)
@@ -90,14 +93,6 @@ def request_edit():
 	if session['logged_in']:
 		request_id = request.form['request_id']
 		request_header, request_detail = db.fetch_one_whole_request(request_id)
-		print len(request_detail)
-		print request_detail[0].request_detail_id
-		print request_detail[0].request_header_id
-		print request_detail[0].food_item_id
-		print request_detail[0].category_id
-		print request_detail[0].quantity
-		print request_detail[0].weight
-		print request_detail[0].expiry_date
 		if len(request_header) == 0 or len(request_detail) == 0:
 			return "error"
 		else:
@@ -106,7 +101,13 @@ def request_edit():
 @app.route('/transaction/add', methods=['GET', 'POST'])
 def transaction_add():
 	if session['logged_in']:
-		return "/transaction/add"
+		if request.form['submit'] == 'save':
+			return "save"
+		elif request.form['submit'] == 'approve':
+			db.approve_request(request.form['request_id'])
+			return "approve"
+		else:
+			return redirect(url_for('login_foodbank'))
 
 @app.route('/signup/donor', methods=['GET', 'POST'])
 def signup_donor():

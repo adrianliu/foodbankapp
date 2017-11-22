@@ -11,19 +11,17 @@
             Donate to:
 			<select name="to_user">
 				<option value="Please select the food bank" selected="selected" disabled="disabled">Please select the food bank</option>
-				<option value="1">Food Bank 1</option>
-				<option value="2">Food Bank 2</option>
-				<option value="3">Food Bank 3</option>
-				<option value="4">Food Bank 4</option>
+				{% for username in foodbanks_username %}
+				<option value="{{ username }}">{{ username }}</option>
+				{% endfor %}
 			</select>
 			<br><br>
 			Add Food Item:<br>
 			<select name="category_id">
 				<option value="Please select the category" selected="selected" disabled="disabled">Please select the category</option>
-				<option value="1">Category 1</option>
-				<option value="2">Category 2</option>
-				<option value="3">Category 3</option>
-				<option value="4">Category 4</option>
+				{% for key, value in categories.iteritems() %}
+				<option value="{{ key }}">{{ value }}</option>
+				{% endfor %}
 			</select>
 			
 			<br><input type="text" name="food_item_id" value="" placeholder="Food Name">

@@ -17,7 +17,7 @@
 			</select>
 			<br><br>
 			List of food items:
-			<table>
+			<table border="1">
 				<tr>
 					<th>Category Name</th>
 					<th>Food Name</th>
@@ -34,12 +34,7 @@
 					<td> {{ details.expiry_date }} </td>
 				</tr>
 				{% endfor %}
-			</table>    		
-			<br><input type="text" name="category_item_id" value="" placeholder="Category Name">
-			<br><input type="text" name="food_item_id" value="" placeholder="Food Name">
-			<br><input type="text" name="quantity" value="" placeholder="Quantity">
-			<br><input type="text" name="weight" value="" placeholder="Weight">
-			<br>Expiration Date:<input type="date" name="expiry_date"><br>
+			</table> 
 
 			<br>Preferred beneficiary (optional):<input type="text" name="beneficiary" value="{{ request_header.beneficiary }}">
 			<br>Appointment Date:<input type="date" name="date" value="{{ request_header.appointment_date }}">
@@ -51,11 +46,12 @@
 				<option value="3">Monthly</option>
 			</select>
 			<br>Do you have anything specific for this donation?
-			<br><textarea rows="4" cols="50" name="description"></textarea>
+			<br><textarea rows="4" cols="50" name="description">{{ request_header.description }}</textarea>
 			<br><br>  
-			<input type="submit" value="cancel">	
-			<input type="submit" value="save">	
-			<input type="submit" value="approve">	  		
+			<input type="submit" name="submit" value="cancel">	
+			<input type="submit" name="submit" value="save">	
+			<input type="submit" name="submit" value="approve">	  
+			<input type="hidden" name="request_id" value="{{ request_header.request_id }}">		
     	</form>
     </div>
 </div>
