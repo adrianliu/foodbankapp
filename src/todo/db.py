@@ -2,6 +2,7 @@ import os
 import json
 import sqlite3
 from models import Request, Request_Detail, User
+from todo import constants as constants
 
 # From: https://goo.gl/YzypOI
 def singleton(cls):
@@ -23,7 +24,9 @@ class DB(object):
     # TODO - Create all other tables here
     self.create_user_table()
     self.create_request_table()
-    self.create_event_detail_table()
+    self.create_request_detail_table()
+    self.create_transaction_table()
+    self.create_transaction_detail_table()
     self.create_food_item_table()
     self.create_category_table()
 
@@ -119,7 +122,7 @@ class DB(object):
         EMAIL TEXT,
         DESCRIPTION TEXT,
         ORGANIZATION_TYPE TEXT,
-        USER_TYPE TEXT,
+        USER_TYPE INTEGER,
         PICK_UP_METHOD TEXT,
         POPULATION TEXT,
         TOTAL_CAPACITY TEXT,
@@ -148,15 +151,18 @@ class DB(object):
 
   def user_login(self, username, password):
     cursor = self.conn.execute("""
-      SELECT username, password FROM user;
+      SELECT * FROM user;
     """)
 
     for row in cursor:
       one_username = row[0]
       one_password = row[1]
       if str(one_username) == str(username) and str(one_password) == str(password):
-        return True
-    return False
+        name = row[2]
+        user_type = row[12]
+        new_user = User(one_username, one_password, name, None, None, None, None, None, None, None, None, None, user_type, None, None, None, None)
+        return new_user
+    return None
 
   def create_request_table(self):
     """
@@ -166,12 +172,33 @@ class DB(object):
     try:
       self.conn.execute("""
         CREATE TABLE request
-        (REQUEST_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        (REQUEST_ID TEXT PRIMARY KEY NOT NULL,
         FROM_USER TEXT,
         TO_USER TEXT,
         APPOINTMENT_DATE TEXT,
         APPOINTMENT_TIME TEXT,
-        REQUEST_TYPE TEXT,
+        REQUEST_TYPE INTEGER,
+        BENEFICIARY TEXT,
+        FREQUENCY TEXT,
+        DESCRIPTION TEXT,
+        CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
+      """)
+    except Exception as e: print e
+
+  def create_transaction_table(self):
+    """
+    Create a Transaction table. Silently error-handles
+    (try-except) because the table might already exist.
+    """
+    try:
+      self.conn.execute("""
+        CREATE TABLE transaction_header
+        (TRANSACTION_ID TEXT PRIMARY KEY NOT NULL,
+        FROM_USER TEXT,
+        TO_USER TEXT,
+        APPOINTMENT_DATE TEXT,
+        APPOINTMENT_TIME TEXT,
+        REQUEST_TYPE INTEGER,
         BENEFICIARY TEXT,
         FREQUENCY TEXT,
         DESCRIPTION TEXT,
@@ -184,9 +211,10 @@ class DB(object):
       return
 
     self.conn.execute("""
-      INSERT INTO request (FROM_USER,TO_USER,APPOINTMENT_DATE,APPOINTMENT_TIME,REQUEST_TYPE,BENEFICIARY,FREQUENCY,DESCRIPTION)
-      VALUES (?,?,?,?,?,?,?,?)""", (request.from_user, request.to_user, request.appointment_date, request.appointment_time, request.request_type, request.beneficiary, request.frequency, request.description))
+      INSERT INTO request (REQUEST_ID,FROM_USER,TO_USER,APPOINTMENT_DATE,APPOINTMENT_TIME,REQUEST_TYPE,BENEFICIARY,FREQUENCY,DESCRIPTION)
+      VALUES (?,?,?,?,?,?,?,?,?)""", (request.request_id, request.from_user, request.to_user, request.appointment_date, request.appointment_time, request.request_type, request.beneficiary, request.frequency, request.description))
     self.conn.commit()
+    return request.request_id
 
   def create_request_detail_table(self):
     """
@@ -196,9 +224,29 @@ class DB(object):
     try:
       self.conn.execute("""
         CREATE TABLE request_detail
-        (REQUEST_DETAIL_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-        REQUEST_HEADER_ID INTEGER NOT NULL,
-        FOOD_ITEM_ID TEXT,
+        (REQUEST_DETAIL_ID TEXT PRIMARY KEY NOT NULL,
+        REQUEST_HEADER_ID TEXT NOT NULL,
+        FOOD_ITEM_ID INTEGER,
+        CATEGORY_ID INTEGER,
+        QUANTITY TEXT,
+        WEIGHT TEXT,
+        EXPIRY_DATE TEXT,
+        CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
+      """)
+    except Exception as e: print e
+
+  def create_transaction_detail_table(self):
+    """
+    Create a Transaction Detail table. Silently error-handles
+    (try-except) because the table might already exist.
+    """
+    try:
+      self.conn.execute("""
+        CREATE TABLE transaction_detail
+        (TRANSACTION_DETAIL_ID TEXT PRIMARY KEY NOT NULL,
+        TRANSACTION_HEADER_ID TEXT NOT NULL,
+        FOOD_ITEM_ID INTEGER,
+        CATEGORY_ID INTEGER,
         QUANTITY TEXT,
         WEIGHT TEXT,
         EXPIRY_DATE TEXT,
@@ -211,8 +259,8 @@ class DB(object):
       return
 
     self.conn.execute("""
-      INSERT INTO request_detail (REQUEST_HEADER_ID,FOOD_ITEM_ID,QUANTITY,WEIGHT,EXPIRY_DATE)
-      VALUES (?,?,?,?,?)""", (detail.request_header_id, detail.food_item_id, detail.quantity, detail.weight, detail.expiry_date))
+      INSERT INTO request_detail (REQUEST_DETAIL_ID,REQUEST_HEADER_ID,FOOD_ITEM_ID,CATEGORY_ID,QUANTITY,WEIGHT,EXPIRY_DATE)
+      VALUES (?,?,?,?,?,?,?)""", (detail.request_detail_id, detail.request_header_id, detail.food_item_id, detail.category_id, detail.quantity, detail.weight, detail.expiry_date))
     self.conn.commit()
 
   def create_food_item_table(self):
@@ -245,6 +293,67 @@ class DB(object):
         CREATED_AT DATETIME DEFAULT (STRFTIME('%d-%m-%Y   %H:%M', 'NOW','localtime')));
       """)
     except Exception as e: print e
+
+  def create_category_entry(self):
+    pass
+
+  def fetch_request(self, username):
+    cursor = self.conn.execute("""
+      SELECT * FROM request where 1 == 1 or to_user = (?)""",(username,))
+
+    donations = []
+    consumptions = []
+    for row in cursor:
+      request_id = row[0]
+      from_user = row[1]
+      # to_user = row[2]
+      appointment_date = row[3]
+      appointment_time = row[4]
+      request_type = row[5]
+      beneficiary = row[6]
+      frequency = row[7]
+      description = row[8]
+      create_date = row[9]
+
+      new_request = Request(from_user, username, appointment_date, appointment_time, request_type, beneficiary, frequency, description, create_date, request_id)
+      if request_type == constants.REQUEST_DONATION:
+        donations.append(new_request)
+      else:
+        consumptions.append(new_request)
+    return donations, consumptions
+
+  def fetch_one_whole_request(self, request_id):
+    cursor = self.conn.execute("""
+      SELECT * FROM request where request_id = (?)""",(request_id,))
+    request_header = []
+    for row in cursor:
+      # request_id = row[0]
+      from_user = row[1]
+      to_user = row[2]
+      appointment_date = row[3]
+      appointment_time = row[4]
+      request_type = row[5]
+      beneficiary = row[6]
+      frequency = row[7]
+      description = row[8]
+      create_date = row[9]
+      new_request = Request(from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description, create_date, request_id)
+      request_header.append(new_request)
+
+    cursor = self.conn.execute("""
+      SELECT * FROM request_detail where request_header_id = (?)""",(request_id,)) 
+    request_detail = []
+    for row in cursor:
+      request_detail_id = row[0]
+      # request_header_id = row[1]
+      food_item_id = row[2]
+      category_id = row[3]
+      quantity = row[4]
+      weight = row[5]
+      expiry_date = row[6]
+      new_request_detail = Request_Detail(request_id, food_item_id, category_id, quantity, weight, expiry_date, request_detail_id)
+      request_detail.append(new_request_detail)
+    return request_header, request_detail
 
 
 # Only <=1 instance of the DB driver

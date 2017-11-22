@@ -6,6 +6,7 @@ from flask import request
 from flask import session
 from flask import url_for
 from todo import app
+from todo import constants as constants
 from todo import Db as db
 from models import Request, Request_Detail, User
 import json
@@ -19,27 +20,41 @@ def login_complete():
 	if request.method == 'POST':
 		username = request.form['username']
 		password = request.form['password']
-		if db.user_login(username, password):
-			session['logged_in'] = True
-			session['username'] = username
-			return redirect(url_for('login_donor'))
-		else:
+		user = db.user_login(username, password)
+		if user == None:
 			# todo
-			return "Incorrect username or password"
+			return "Incorrect username or password"			
+		else:
+			user_type = user.user_type
+			session['username'] = username
+			session['user_type'] = user_type
+			if user_type == constants.TYPE_DONOR:
+				return redirect(url_for('login_donor'))
+			elif user_type == constants.TYPR_CONSUMER:
+				return redirect(url_for('login_consumer'))
+			elif user_type == constants.TYPE_FOODBANK:
+				return redirect(url_for('login_foodbank'))
 
 @app.route('/login/donor/', methods=['GET', 'POST'])
 def login_donor():
 	if session['logged_in']:
-		return render_template('login_donor.html')	
-	else:
-		flash('wrong password!')
+		return render_template('login_donor.html')
 
-@app.route('/donate', methods=['GET', 'POST'])
-def donate_request():
+@app.route('/login/consumer/', methods=['GET', 'POST'])
+def login_consumer():
 	if session['logged_in']:
-		return render_template('donate_request.html')
-	else:
-		flash('wrong password!')
+		return render_template('login_consumer.html')
+
+@app.route('/login/foodbank/', methods=['GET', 'POST'])
+def login_foodbank():
+	if session['logged_in']:
+		donations, consumptions = db.fetch_request(session['username'])		
+		return render_template('login_foodbank.html', donations = donations, consumptions = consumptions)
+
+@app.route('/request/donate', methods=['GET', 'POST'])
+def request_donate():
+	if session['logged_in']:
+		return render_template('request_donate.html')
 
 @app.route('/submit/donate', methods=['GET', 'POST'])
 def submit_donate_request():
@@ -48,19 +63,50 @@ def submit_donate_request():
 		to_user = request.form['to_user']
 		appointment_date = request.form['date']
 		appointment_time = request.form['time']		
-		request_type = 1
+		request_type = constants.REQUEST_DONATION
 		beneficiary = request.form['beneficiary']
 		frequency = request.form['frequency']
 		description = request.form['description']
 
 		food_item_id = request.form['food_item_id']
+		category_id = request.form['category_id']
 		quantity = request.form['quantity']
 		weight = request.form['weight']
 		expiry_date = request.form['expiry_date']
 
 		new_request = Request(from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description)
-		db.create_request_header(new_request)
+		request_id = db.create_request_header(new_request)
+		new_request_detail = Request_Detail(request_id, food_item_id, category_id, quantity, weight, expiry_date)
+		db.create_request_detail_entry(new_request_detail)
 		return "succeed"
+
+@app.route('/request/claim', methods=['GET', 'POST'])
+def request_claim():
+	if session['logged_in']:
+		return render_template('request_claim.html')
+
+@app.route('/request/edit', methods=['GET', 'POST'])
+def request_edit():
+	if session['logged_in']:
+		request_id = request.form['request_id']
+		request_header, request_detail = db.fetch_one_whole_request(request_id)
+		print len(request_detail)
+		print request_detail[0].request_detail_id
+		print request_detail[0].request_header_id
+		print request_detail[0].food_item_id
+		print request_detail[0].category_id
+		print request_detail[0].quantity
+		print request_detail[0].weight
+		print request_detail[0].expiry_date
+		if len(request_header) == 0 or len(request_detail) == 0:
+			return "error"
+		else:
+			return render_template('request_edit.html', request_header = request_header[0], request_detail = request_detail)
+
+@app.route('/transaction/add', methods=['GET', 'POST'])
+def transaction_add():
+	if session['logged_in']:
+		return "/transaction/add"
 
 @app.route('/signup/donor', methods=['GET', 'POST'])
 def signup_donor():
@@ -79,21 +125,21 @@ def signup_complete():
 	if request.method == 'POST':
 		username = request.form['username']
 		password = request.form['password']
-		name = None;
-		address = None;
-		zip_code = None;
-		city = None;
-		state = None;
-		country = None;
-		phone = None;
-		email = None;
-		description = None;
-		organization_type = None;
-		user_type = None;
-		pick_up_method = None;
-		population = None;
-		total_capacity = None;
-		current_inventory = None;
+		name = None
+		address = None
+		zip_code = None
+		city = None
+		state = None
+		country = None
+		phone = None
+		email = None
+		description = None
+		organization_type = None
+		user_type = request.form['user_type']
+		pick_up_method = None
+		population = None
+		total_capacity = None
+		current_inventory = None
 		new_user = User(username, password, name, address, zip_code, city, state, country, phone, email, description, organization_type, user_type, pick_up_method, population, total_capacity, current_inventory)
 		if db.create_user(new_user):
 			return "Sign Up Complete!"

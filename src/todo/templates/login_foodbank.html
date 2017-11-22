@@ -5,14 +5,40 @@
 </head>
 <body>
 
-<!-- <link rel="stylesheet" href="/static/login.css" type="text/css">
- -->
+<link rel="stylesheet" href="/static/login_foodbank.css" type="text/css">
+
 
 <div class="main">
     <div class="main-menu">
-        <form action="/donate" method="POST">
-            <input type="button" name="donate" value="Make a Donation">
-        </form>
+    	<div class="pending_donation">
+			<table>
+				<tr>
+					<th>Date Requested</th>
+					<th>Appointment DATE</th>
+					<th>From</th>
+					<th></th>
+				</tr>
+				{% for donation_request in donations %}
+				<tr>				
+					<td> {{ donation_request.create_date }} </td>
+					<td> {{ donation_request.appointment_date }} </td>
+					<td> {{ donation_request.from_user }} </td>
+					<td>
+						<form action="/request/edit" method="POST">
+							<input type="hidden" name="request_id" value="{{ donation_request.request_id }}">
+							<input type="submit" name="edit" value="edit">
+						</form>
+					</td>					
+				</tr>
+				{% endfor %}
+			</table>    		
+    	</div>
+    	<div class="pending_claim">
+    	</div>
+    	<div class="transaction_donation_history">
+    	</div>
+    	<div class="transaction_claim_history">
+    	</div>
     </div>
 </div>
 

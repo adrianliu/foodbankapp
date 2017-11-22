@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Log In</title>
+</head>
+<body>
+
+<div class="request-edit-main">
+    <div class="request-edit-main-menu">
+    	<form action="/transaction/add" method="POST">
+	        Donate to:
+			<select name="to_user">
+				<option value="1">Food Bank 1</option>
+				<option value="2">Food Bank 2</option>
+				<option value="3">Food Bank 3</option>
+				<option value="4">Food Bank 4</option>
+			</select>
+			<br><br>
+			List of food items:
+			<table>
+				<tr>
+					<th>Category Name</th>
+					<th>Food Name</th>
+					<th>Quantity</th>
+					<th>Weight</th>
+					<th>Expiration Date</th>
+				</tr>
+				{% for details in request_detail %}
+				<tr>				
+					<td> {{ details.category_id }} </td>
+					<td> {{ details.food_item_id }} </td>
+					<td> {{ details.quantity }} </td>
+					<td> {{ details.weight }} </td>
+					<td> {{ details.expiry_date }} </td>
+				</tr>
+				{% endfor %}
+			</table>    		
+			<br><input type="text" name="category_item_id" value="" placeholder="Category Name">
+			<br><input type="text" name="food_item_id" value="" placeholder="Food Name">
+			<br><input type="text" name="quantity" value="" placeholder="Quantity">
+			<br><input type="text" name="weight" value="" placeholder="Weight">
+			<br>Expiration Date:<input type="date" name="expiry_date"><br>
+
+			<br>Preferred beneficiary (optional):<input type="text" name="beneficiary" value="{{ request_header.beneficiary }}">
+			<br>Appointment Date:<input type="date" name="date" value="{{ request_header.appointment_date }}">
+			<br>Appointment Time:<input type="time" name="time" value="{{ request_header.appointment_time }}">
+			<br>Frequency
+			<select name="frequency">
+				<option value="1">One Time</option>
+				<option value="2">Weekly</option>
+				<option value="3">Monthly</option>
+			</select>
+			<br>Do you have anything specific for this donation?
+			<br><textarea rows="4" cols="50" name="description"></textarea>
+			<br><br>  
+			<input type="submit" value="cancel">	
+			<input type="submit" value="save">	
+			<input type="submit" value="approve">	  		
+    	</form>
+    </div>
+</div>
+
+</body>
+</html>

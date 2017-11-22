@@ -70,7 +70,11 @@ class Request(Model):
   """
   class for all Task model
   """
-  def __init__(self, from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description):
+  def __init__(self, from_user, to_user, appointment_date, appointment_time, request_type, beneficiary, frequency, description, create_date = None, request_id = None):
+    if request_id == None:
+      self.request_id = str(uuid.uuid1())
+    else:
+      self.request_id = request_id
     self.from_user = from_user
     self.to_user = to_user
     self.appointment_date = appointment_date
@@ -79,14 +83,20 @@ class Request(Model):
     self.beneficiary = beneficiary
     self.frequency = frequency
     self.description = description
+    self.create_date = create_date
 
 class Request_Detail(Model):
   """
   class for all Task model
   """
-  def __init__(self, request_header_id, food_item_id, quantity, weight, expiry_date):
+  def __init__(self, request_header_id, food_item_id, category_id, quantity, weight, expiry_date, request_detail_id = None):
+    if request_detail_id == None:
+      self.request_detail_id = str(uuid.uuid1())
+    else:
+      self.request_detail_id = request_detail_id
     self.request_header_id = request_header_id
     self.food_item_id = food_item_id
+    self.category_id = category_id
     self.quantity = quantity
     self.weight = weight
     self.expiry_date = expiry_date
